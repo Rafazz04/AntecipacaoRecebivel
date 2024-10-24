@@ -10,4 +10,9 @@ public class AntecipacaoRecebiveisDbContext : DbContext
     public DbSet<Empresa> EMPRESA { get; set; }
     public DbSet<NotaFiscal> NOTAFISCAL { get; set; }
     public DbSet<Carrinho> CARRINHO { get; set; }
+	protected override void OnModelCreating(ModelBuilder builder)
+	{
+		base.OnModelCreating(builder);
+		builder.ApplyConfigurationsFromAssembly(typeof(AntecipacaoRecebiveisDbContext).Assembly);
+	}
 }

@@ -32,7 +32,7 @@ public static class DependencyInjectionExtensions
 		var connectiontring = configuration.GetConnectionString("DefaultConnection");
 		services.AddDbContext<AntecipacaoRecebiveisDbContext>(ctx =>
 		{
-			ctx.UseSqlServer(connectiontring, opt => opt.MigrationsAssembly("AntecipacaoRecebivel .Infrastructure"));
+			ctx.UseSqlServer(connectiontring, opt => opt.MigrationsAssembly("AntecipacaoRecebivel.Infrastructure"));
 		});
 	}
 	private static void AddRepositories(IServiceCollection services)

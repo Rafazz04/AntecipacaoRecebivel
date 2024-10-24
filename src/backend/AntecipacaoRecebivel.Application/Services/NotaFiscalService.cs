@@ -1,5 +1,6 @@
 ﻿using AntecipacaoRecebivel.Application.DTOs.NotaFiscalDTO.Create;
 using AntecipacaoRecebivel.Application.Services.Interfaces;
+using AntecipacaoRecebivel.Communication.Utils;
 using AntecipacaoRecebivel.Domain.Entities;
 using AntecipacaoRecebivel.Domain.Interfaces;
 using AutoMapper;
@@ -10,12 +11,14 @@ namespace AntecipacaoRecebivel.Application.Services;
 public class NotaFiscalService : INotaFiscalService
 {
 	private readonly INotaFiscalRepository _notaFiscalRepository;
+	private readonly IEmpresaRepository _empresaRepository;
 	private readonly IMapper _mapper;
 	private readonly IValidator<NotaFiscalCreateRequestDTO> _validator;
 
-	public NotaFiscalService(INotaFiscalRepository notaFiscalRepository, IMapper mapper, IValidator<NotaFiscalCreateRequestDTO> validator)
+	public NotaFiscalService(INotaFiscalRepository notaFiscalRepository, IEmpresaRepository empresaRepository, IMapper mapper, IValidator<NotaFiscalCreateRequestDTO> validator)
 	{
 		_notaFiscalRepository = notaFiscalRepository;
+		_empresaRepository = empresaRepository;
 		_mapper = mapper;
 		_validator = validator;
 	}
@@ -32,7 +35,9 @@ public class NotaFiscalService : INotaFiscalService
 		{
 			if (_validator.Validate(notaFiscalDto).IsValid)
 			{
+				var empresa = _empresaRepository.GetByCnpj(Util.LimpaCnpj(notaFiscalDto.Cnpj)) ?? throw new Exception("Empresa não localizada!");
 				var notaFiscal = _mapper.Map<NotaFiscal>(notaFiscalDto);
+				notaFiscal.EmpresaId = empresa.Id;
 				_notaFiscalRepository.Create(notaFiscal);
 				if (_notaFiscalRepository.SaveChanges())
 					return _mapper.Map<NotaFiscalCreateResponseDTO>(notaFiscal);
@@ -45,7 +50,7 @@ public class NotaFiscalService : INotaFiscalService
 		}
 		catch (Exception ex)
 		{
-			throw new Exception($"{ex.Message} - {ex.StackTrace}");
+			throw new Exception($"{ex.InnerException?.Message} - {ex.StackTrace}");
 		}
 	}
 

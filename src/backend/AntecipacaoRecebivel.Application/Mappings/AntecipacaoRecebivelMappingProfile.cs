@@ -16,7 +16,11 @@ public class AntecipacaoRecebivelMappingProfile : Profile
         CreateMap<NotaFiscalCreateRequestDTO, NotaFiscal>().ReverseMap();
         CreateMap<NotaFiscalCreateResponseDTO, NotaFiscal>().ReverseMap();
 
-        CreateMap<CarrinhoCreateResponseDTO, Carrinho>().ReverseMap();
-        CreateMap<CarrinhoCheckoutReadResponseDTO, Carrinho>().ReverseMap();
+        CreateMap<Carrinho, CarrinhoCreateResponseDTO>()
+            .ForMember(dest => dest.Cnpj, opt => opt.MapFrom(src => src.Empresa.Cnpj))
+            .ForMember(dest => dest.LimiteCredito, opt => opt.MapFrom(src => src.LimiteDeCreditoDisponivel));
+
+        CreateMap<CarrinhoCheckoutReadResponseDTO, Carrinho>().ReverseMap()
+            .ForMember(dest => dest.Limite, opt => opt.MapFrom(src => src.LimiteDeCreditoDisponivel));
     }
 }

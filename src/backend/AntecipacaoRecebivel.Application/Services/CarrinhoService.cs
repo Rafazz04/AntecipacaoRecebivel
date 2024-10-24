@@ -25,12 +25,6 @@ public class CarrinhoService : ICarrinhoService
 		_mapper = mapper;
 	}
 
-	public CarrinhoCheckoutReadResponseDTO GetCarrinhoById(int id)
-	{
-		var carrinho = _carrinhoRepository.GetById(id) ?? throw new Exception("Empresa não localizada");
-		return _mapper.Map<CarrinhoCheckoutReadResponseDTO>(carrinho);
-	}
-
 	public CarrinhoCreateResponseDTO CreateCarrinho(string cnpj)
 	{
 		try
@@ -61,13 +55,15 @@ public class CarrinhoService : ICarrinhoService
 	{
 		try
 		{
-			var carrinho = _carrinhoRepository.GetById(carrinhoId) ?? throw new Exception("Carrinho não localizado");
+			var carrinho = _carrinhoRepository.GetCarrinhoComEmpresa(carrinhoId) ?? throw new Exception("Carrinho não localizado");
 			var notaFiscal = _notaFiscalRepository.GetById(notaFiscalId) ?? throw new Exception("Nota Fiscal não localizada");
 
 			if (carrinho.ValorTotalBruto + notaFiscal.ValorBruto > carrinho.LimiteDeCreditoDisponivel)
 				throw new Exception("Valor total das notas fiscais excede o limite de crédito da empresa");
 
-			carrinho.NotasFiscais.Add(notaFiscal);
+			if(carrinho.NotasFiscais == null)
+                carrinho.NotasFiscais = new List<NotaFiscal>();
+            carrinho.NotasFiscais.Add(notaFiscal);
 			AtualizaValoresDoCarrinho(carrinho);
 			_carrinhoRepository.Update(carrinho);
 
@@ -85,7 +81,7 @@ public class CarrinhoService : ICarrinhoService
 	{
 		try
 		{
-			var carrinho = _carrinhoRepository.GetById(carrinhoId) ?? throw new Exception("Carrinho não localizado");
+			var carrinho = _carrinhoRepository.GetCarrinhoComEmpresa(carrinhoId) ?? throw new Exception("Carrinho não localizado");
 			var notaFiscal = carrinho.NotasFiscais.FirstOrDefault(nf => nf.Id == notaFiscalId);
 
 			if (notaFiscal == null)
@@ -104,27 +100,9 @@ public class CarrinhoService : ICarrinhoService
 		}
 	}
 
-	public CarrinhoCreateResponseDTO CalcularAntecipacao(int id)
-	{
-		try
-		{
-			var carrinho = _carrinhoRepository.GetById(id) ?? throw new Exception("Carrinho não localizado");
-
-			AtualizaValoresDoCarrinho(carrinho);
-			_carrinhoRepository.Update(carrinho);
-			if(_carrinhoRepository.SaveChanges())
-				return _mapper.Map<CarrinhoCreateResponseDTO>(carrinho);
-			throw new Exception("Erro ao calcular antecipação!");
-		}
-		catch (Exception ex)
-		{
-			throw new Exception($"{ex.Message} - {ex.StackTrace}");
-		}
-	}
-
 	public CarrinhoCheckoutReadResponseDTO Checkout(int id)
 	{
-		var carrinho = _carrinhoRepository.GetById(id) ?? throw new Exception("Carrinho não localizado");
+		var carrinho = _carrinhoRepository.GetCarrinhoComEmpresa(id) ?? throw new Exception("Carrinho não localizado");
 		AtualizaValoresDoCarrinho(carrinho);
 
 		return new CarrinhoCheckoutReadResponseDTO
@@ -145,7 +123,7 @@ public class CarrinhoService : ICarrinhoService
 
 	private decimal CalcularValorLiquido(NotaFiscal notaFiscal)
 	{
-		var prazo = (DateTime.Now - notaFiscal.DataVencimento).Days;
+		var prazo = (notaFiscal.DataVencimento - DateTime.Now).Days;
 		var taxa = 0.0465m;
 		var desagio = notaFiscal.ValorBruto / (decimal)Math.Pow((double)(1 + taxa), prazo / 30.0);
 		return notaFiscal.ValorBruto - desagio;
@@ -154,7 +132,9 @@ public class CarrinhoService : ICarrinhoService
 
 	private void AtualizaValoresDoCarrinho(Carrinho carrinho)
 	{
-		carrinho.ValorTotalBruto = carrinho.NotasFiscais.Sum(nf => nf.ValorBruto);
+        if (carrinho.NotasFiscais == null)
+            carrinho.NotasFiscais = new List<NotaFiscal>(); 
+        carrinho.ValorTotalBruto = carrinho.NotasFiscais.Sum(nf => nf.ValorBruto);
 		carrinho.ValorTotalLiquido = carrinho.NotasFiscais.Sum(nf => CalcularValorLiquido(nf));
 	}
 

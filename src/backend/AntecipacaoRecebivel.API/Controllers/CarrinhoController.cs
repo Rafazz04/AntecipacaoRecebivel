@@ -16,7 +16,7 @@ public class CarrinhoController : ControllerBase
 		_carrinhoService = carrinhoService;
 	}
 
-	[HttpPost]
+	[HttpPost("Empresa")]
 	public ActionResult<CarrinhoCreateResponseDTO> Post(string cnpj)
 	{
 		var carrinho = _carrinhoService.CreateCarrinho(cnpj);
@@ -25,7 +25,7 @@ public class CarrinhoController : ControllerBase
 		return Ok(carrinho);
 	}
 
-	[HttpPost("{carrinhoId}/adicionar-nota-fiscal/{notaFiscalId}")]
+	[HttpPost("NotaFiscal")]
 	public ActionResult<CarrinhoCreateResponseDTO> AdicionaNotaFiscal(int carrinhoId, int notaFiscalId)
 	{
 		var carrinho = _carrinhoService.AdicionaNotaFiscalAoCarrinho(carrinhoId, notaFiscalId);
@@ -34,7 +34,7 @@ public class CarrinhoController : ControllerBase
 		return Ok(carrinho);
 	}
 
-	[HttpGet("{id}")]
+	[HttpGet("checkout")]
 	public ActionResult<CarrinhoCheckoutReadResponseDTO> Checkout(int id)
 	{
 		try
@@ -46,15 +46,6 @@ public class CarrinhoController : ControllerBase
 		{
 			return NotFound(ex.Message);
 		}
-	}
-
-	[HttpGet("{id}/detalhes")]
-	public ActionResult<CarrinhoCheckoutReadResponseDTO> GetCarrinhoDetails(int id)
-	{
-		var carrinho = _carrinhoService.GetCarrinhoById(id);
-		if (carrinho == null)
-			return NotFound("Carrinho não encontrado.");
-		return Ok(carrinho);
 	}
 
 }

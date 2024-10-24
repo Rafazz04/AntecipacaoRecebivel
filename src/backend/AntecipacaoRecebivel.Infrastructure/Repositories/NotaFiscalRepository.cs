@@ -1,37 +1,12 @@
 ﻿using AntecipacaoRecebivel.Domain.Entities;
 using AntecipacaoRecebivel.Domain.Interfaces;
+using AntecipacaoRecebivel.Infrastructure.DataAcess;
 
 namespace AntecipacaoRecebivel.Infrastructure.Repositories;
 
-public class NotaFiscalRepository : INotaFiscalRepository
+public class NotaFiscalRepository : RepositoryBase<NotaFiscal>, INotaFiscalRepository
 {
-	public NotaFiscal Create(NotaFiscal entity)
-	{
-		throw new NotImplementedException();
-	}
-
-	public NotaFiscal Delete(NotaFiscal entity)
-	{
-		throw new NotImplementedException();
-	}
-
-	public IEnumerable<NotaFiscal> GetAll()
-	{
-		throw new NotImplementedException();
-	}
-
-	public NotaFiscal GetById(int id)
-	{
-		throw new NotImplementedException();
-	}
-
-	public bool SaveChanges()
-	{
-		throw new NotImplementedException();
-	}
-
-	public NotaFiscal Update(NotaFiscal entity)
-	{
-		throw new NotImplementedException();
-	}
+    public NotaFiscalRepository(AntecipacaoRecebiveisDbContext context) : base(context)
+    {
+    }
 }

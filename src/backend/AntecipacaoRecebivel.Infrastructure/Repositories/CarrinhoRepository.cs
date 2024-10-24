@@ -1,37 +1,20 @@
 ﻿using AntecipacaoRecebivel.Domain.Entities;
 using AntecipacaoRecebivel.Domain.Interfaces;
+using AntecipacaoRecebivel.Infrastructure.DataAcess;
+using Microsoft.EntityFrameworkCore;
 
 namespace AntecipacaoRecebivel.Infrastructure.Repositories;
 
-public class CarrinhoRepository : ICarrinhoRepository
+public class CarrinhoRepository : RepositoryBase<Carrinho>, ICarrinhoRepository
 {
-	public Carrinho Create(Carrinho entity)
-	{
-		throw new NotImplementedException();
-	}
+    private readonly AntecipacaoRecebiveisDbContext _context;
+    public CarrinhoRepository(AntecipacaoRecebiveisDbContext context) : base(context)
+    {
+        _context = context;
+    }
 
-	public Carrinho Delete(Carrinho entity)
-	{
-		throw new NotImplementedException();
-	}
-
-	public IEnumerable<Carrinho> GetAll()
-	{
-		throw new NotImplementedException();
-	}
-
-	public Carrinho GetById(int id)
-	{
-		throw new NotImplementedException();
-	}
-
-	public bool SaveChanges()
-	{
-		throw new NotImplementedException();
-	}
-
-	public Carrinho Update(Carrinho entity)
-	{
-		throw new NotImplementedException();
-	}
+    public Carrinho GetCarrinhoComEmpresa(int id)
+    {
+        return _context.CARRINHO.Include(x => x.Empresa).Include(x => x.NotasFiscais).FirstOrDefault(c => c.Id == id);
+    }
 }

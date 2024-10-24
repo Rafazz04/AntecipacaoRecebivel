@@ -14,6 +14,6 @@ public class EmpresaRepository : RepositoryBase<Empresa>, IEmpresaRepository
 
 	public Empresa GetByCnpj(string cnpj)
 	{
-		return _context.EMPRESA.Find(cnpj);
+		return _context.EMPRESA.FirstOrDefault(e => e.Cnpj == cnpj);
 	}
 }

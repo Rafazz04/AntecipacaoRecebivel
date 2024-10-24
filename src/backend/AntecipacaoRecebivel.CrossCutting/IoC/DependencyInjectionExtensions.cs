@@ -1,10 +1,8 @@
-﻿using AntecipacaoRecebivel.Application.DTOs.CarrinhoDTO.Read;
-using AntecipacaoRecebivel.Application.DTOs.EmpresaDTO.Create;
+﻿using AntecipacaoRecebivel.Application.DTOs.EmpresaDTO.Create;
 using AntecipacaoRecebivel.Application.DTOs.NotaFiscalDTO.Create;
 using AntecipacaoRecebivel.Application.Mappings;
 using AntecipacaoRecebivel.Application.Services;
 using AntecipacaoRecebivel.Application.Services.Interfaces;
-using AntecipacaoRecebivel.Application.Validators.Carrinho;
 using AntecipacaoRecebivel.Application.Validators.Empresa;
 using AntecipacaoRecebivel.Application.Validators.NotaFiscal;
 using AntecipacaoRecebivel.Domain.Interfaces;
@@ -34,7 +32,7 @@ public static class DependencyInjectionExtensions
 		var connectiontring = configuration.GetConnectionString("DefaultConnection");
 		services.AddDbContext<AntecipacaoRecebiveisDbContext>(ctx =>
 		{
-			ctx.UseSqlServer(connectiontring);
+			ctx.UseSqlServer(connectiontring, opt => opt.MigrationsAssembly("AntecipacaoRecebivel .Infrastructure"));
 		});
 	}
 	private static void AddRepositories(IServiceCollection services)
@@ -55,8 +53,7 @@ public static class DependencyInjectionExtensions
 	private static void AddValidators(IServiceCollection services)
 	{
 		services.AddScoped<IValidator<EmpresaCreateDTO>, EmpresaCreateDTOValidator>();
-		services.AddScoped<IValidator<NotaFiscalCreateRequestDTO>, NotaFiscalCreateRequestDTOValidator>();
-		services.AddScoped<IValidator<CarrinhoCheckoutReadResponseDTO>, CarrinhoCheckoutReadResponseDTOValidator>();
+		services.AddScoped<IValidator<NotaFiscalCreateRequestDTO>, NotaFiscalCreateRequestDTOValidator>();	
 	}
 
 }

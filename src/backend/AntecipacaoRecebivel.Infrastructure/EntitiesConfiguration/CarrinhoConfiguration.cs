@@ -13,11 +13,9 @@ public class CarrinhoConfiguration : IEntityTypeConfiguration<Carrinho>
 		builder.HasKey(c => c.Id);
 
 		builder.Property(c => c.ValorTotalBruto)
-			   .IsRequired()
 			   .HasColumnType("decimal(18,2)");
 
 		builder.Property(c => c.ValorTotalLiquido)
-			   .IsRequired()
 			   .HasColumnType("decimal(18,2)");
 
 		builder.HasOne(c => c.Empresa)

@@ -1,33 +1,181 @@
 ﻿using AntecipacaoRecebivel.Application.DTOs.CarrinhoDTO.Create;
 using AntecipacaoRecebivel.Application.DTOs.CarrinhoDTO.Read;
+using AntecipacaoRecebivel.Application.DTOs.NotaFiscalDTO.Create;
 using AntecipacaoRecebivel.Application.Services.Interfaces;
+using AntecipacaoRecebivel.Communication.Utils;
+using AntecipacaoRecebivel.Domain.Entities;
+using AntecipacaoRecebivel.Domain.Interfaces;
+using AutoMapper;
+using FluentValidation;
 
 namespace AntecipacaoRecebivel.Application.Services;
 
 public class CarrinhoService : ICarrinhoService
 {
-	public CarrinhoCreateResponseDTO AdicionaNotaFiscalAoCarrinho(int carrinhoId, int notaFiscalId)
+	private readonly ICarrinhoRepository _carrinhoRepository;
+	private readonly INotaFiscalRepository _notaFiscalRepository;
+	private readonly IEmpresaRepository _empresaRepository;
+	private readonly IMapper _mapper;
+
+	public CarrinhoService(ICarrinhoRepository carrinhoRepository,INotaFiscalRepository notaFiscalRepository,IEmpresaRepository empresaRepository,IMapper mapper)
 	{
-		throw new NotImplementedException();
+		_carrinhoRepository = carrinhoRepository;
+		_notaFiscalRepository = notaFiscalRepository;
+		_empresaRepository = empresaRepository;
+		_mapper = mapper;
 	}
 
-	public CarrinhoCreateResponseDTO CalcularAntecipacaoAsync(int id)
+	public CarrinhoCheckoutReadResponseDTO GetCarrinhoById(int id)
 	{
-		throw new NotImplementedException();
-	}
-
-	public CarrinhoCheckoutReadResponseDTO Checkout(int id)
-	{
-		throw new NotImplementedException();
+		var carrinho = _carrinhoRepository.GetById(id) ?? throw new Exception("Empresa não localizada");
+		return _mapper.Map<CarrinhoCheckoutReadResponseDTO>(carrinho);
 	}
 
 	public CarrinhoCreateResponseDTO CreateCarrinho(string cnpj)
 	{
-		throw new NotImplementedException();
+		try
+		{
+			var empresa = _empresaRepository.GetByCnpj(cnpj) ?? throw new Exception("Empresa não localizada");
+
+			var carrinho = new Carrinho
+			{
+				EmpresaId = empresa.Id,
+				LimiteDeCreditoDisponivel = CalculaLimiteCredito(empresa),
+				ValorTotalBruto = 0,
+				ValorTotalLiquido = 0,
+				NotasFiscais = new List<NotaFiscal>()
+			};
+
+			_carrinhoRepository.Create(carrinho);
+			if (_carrinhoRepository.SaveChanges())
+				return _mapper.Map<CarrinhoCreateResponseDTO>(carrinho);
+			throw new Exception("Erro ao adicionar cliente");
+		}
+		catch (Exception ex) 
+		{
+			throw new Exception($"{ex.Message} - {ex.StackTrace}");
+		}
 	}
 
-	public bool DeleteCarrinho(int carrinhoId, int notaFiscalId)
+	public CarrinhoCreateResponseDTO AdicionaNotaFiscalAoCarrinho(int carrinhoId, int notaFiscalId)
 	{
-		throw new NotImplementedException();
+		try
+		{
+			var carrinho = _carrinhoRepository.GetById(carrinhoId) ?? throw new Exception("Carrinho não localizado");
+			var notaFiscal = _notaFiscalRepository.GetById(notaFiscalId) ?? throw new Exception("Nota Fiscal não localizada");
+
+			if (carrinho.ValorTotalBruto + notaFiscal.ValorBruto > carrinho.LimiteDeCreditoDisponivel)
+				throw new Exception("Valor total das notas fiscais excede o limite de crédito da empresa");
+
+			carrinho.NotasFiscais.Add(notaFiscal);
+			AtualizaValoresDoCarrinho(carrinho);
+			_carrinhoRepository.Update(carrinho);
+
+			if(_carrinhoRepository.SaveChanges())
+				return _mapper.Map<CarrinhoCreateResponseDTO>(carrinho);
+			throw new Exception("Erro ao adicionar nota fiscal no carrinho");
+		}
+		catch (Exception ex) 
+		{	
+			throw new Exception($"{ex.Message} - {ex.StackTrace}");
+		}
 	}
+
+	public bool DeleteNotaFiscalCarrinho(int carrinhoId, int notaFiscalId)
+	{
+		try
+		{
+			var carrinho = _carrinhoRepository.GetById(carrinhoId) ?? throw new Exception("Carrinho não localizado");
+			var notaFiscal = carrinho.NotasFiscais.FirstOrDefault(nf => nf.Id == notaFiscalId);
+
+			if (notaFiscal == null)
+				throw new Exception("Nota Fiscal não encontrada no carrinho");
+
+			carrinho.NotasFiscais.Remove(notaFiscal);
+			AtualizaValoresDoCarrinho(carrinho);
+			_carrinhoRepository.Update(carrinho);
+			if(_carrinhoRepository.SaveChanges())
+				return true;
+			return false;
+		}
+		catch (Exception ex)
+		{
+			throw new Exception($"{ex.Message} - {ex.StackTrace}");
+		}
+	}
+
+	public CarrinhoCreateResponseDTO CalcularAntecipacao(int id)
+	{
+		try
+		{
+			var carrinho = _carrinhoRepository.GetById(id) ?? throw new Exception("Carrinho não localizado");
+
+			AtualizaValoresDoCarrinho(carrinho);
+			_carrinhoRepository.Update(carrinho);
+			if(_carrinhoRepository.SaveChanges())
+				return _mapper.Map<CarrinhoCreateResponseDTO>(carrinho);
+			throw new Exception("Erro ao calcular antecipação!");
+		}
+		catch (Exception ex)
+		{
+			throw new Exception($"{ex.Message} - {ex.StackTrace}");
+		}
+	}
+
+	public CarrinhoCheckoutReadResponseDTO Checkout(int id)
+	{
+		var carrinho = _carrinhoRepository.GetById(id) ?? throw new Exception("Carrinho não localizado");
+		AtualizaValoresDoCarrinho(carrinho);
+
+		return new CarrinhoCheckoutReadResponseDTO
+		{
+			Nome = carrinho.Empresa.Nome,
+			Cnpj = carrinho.Empresa.Cnpj,
+			Limite = carrinho.LimiteDeCreditoDisponivel,
+			NotasFiscais = carrinho.NotasFiscais.Select(nf => new NotaFiscalCreateResponseDTO
+			{
+				Numero = nf.Numero,
+				ValorBruto = nf.ValorBruto,
+				ValorLiquido = CalcularValorLiquido(nf)
+			}).ToList(),
+			TotalBruto = carrinho.ValorTotalBruto,
+			TotalLiquido = carrinho.ValorTotalLiquido
+		};
+	}
+
+	private decimal CalcularValorLiquido(NotaFiscal notaFiscal)
+	{
+		var prazo = (DateTime.Now - notaFiscal.DataVencimento).Days;
+		var taxa = 0.0465m;
+		var desagio = notaFiscal.ValorBruto / (decimal)Math.Pow((double)(1 + taxa), prazo / 30.0);
+		return notaFiscal.ValorBruto - desagio;
+	}
+
+
+	private void AtualizaValoresDoCarrinho(Carrinho carrinho)
+	{
+		carrinho.ValorTotalBruto = carrinho.NotasFiscais.Sum(nf => nf.ValorBruto);
+		carrinho.ValorTotalLiquido = carrinho.NotasFiscais.Sum(nf => CalcularValorLiquido(nf));
+	}
+
+	private decimal CalculaLimiteCredito(Empresa empresa)
+	{
+		decimal limite = 0;
+
+		if (empresa.Faturamento >= 10000 && empresa.Faturamento <= 50000)
+		{
+			limite = empresa.Faturamento * 0.5m;
+		}
+		else if (empresa.Faturamento > 50000 && empresa.Faturamento <= 100000)
+		{
+			limite = empresa.Ramo == "Serviços" ? empresa.Faturamento * 0.55m : empresa.Faturamento * 0.6m;
+		}
+		else if (empresa.Faturamento > 100000)
+		{
+			limite = empresa.Ramo == "Serviços" ? empresa.Faturamento * 0.6m : empresa.Faturamento * 0.65m;
+		}
+
+		return limite;
+	}
+
 }

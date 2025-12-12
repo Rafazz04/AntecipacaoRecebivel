@@ -5,9 +5,9 @@ using AntecipacaoRecebivel.Application.Services;
 using AntecipacaoRecebivel.Application.Services.Interfaces;
 using AntecipacaoRecebivel.Application.Validators.Empresa;
 using AntecipacaoRecebivel.Application.Validators.NotaFiscal;
-using AntecipacaoRecebivel.Domain.Interfaces;
-using AntecipacaoRecebivel.Infrastructure.DataAcess;
 using AntecipacaoRecebivel.Infrastructure.Repositories;
+using AnticipationOfReceivables.Domain.Repository.Contracts;
+using AnticipationOfReceivables.Infrastructure.DataAcess;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -30,7 +30,7 @@ public static class DependencyInjectionExtensions
 	private static void AddDbContext_SqlServer(IServiceCollection services, IConfiguration configuration)
 	{
 		var connectiontring = configuration.GetConnectionString("DefaultConnection");
-		services.AddDbContext<AntecipacaoRecebiveisDbContext>(ctx =>
+		services.AddDbContext<AnticipationOfReceivablesDbContext>(ctx =>
 		{
 			ctx.UseSqlServer(connectiontring, opt => opt.MigrationsAssembly("AntecipacaoRecebivel.Infrastructure"));
 		});

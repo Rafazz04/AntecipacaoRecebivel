@@ -14,11 +14,24 @@ Fazer o clone do projeto com o comando: git clone https://github.com/Rafazz04/An
 ## 🛠️ Abrir e rodar o projeto
 **-Abra a pasta do projeto AntecipacaoRecebivel**<br>
 **-Abra a solução do projeto AntecipacaoRecebivel.sln (Abra com Visual Studio)**<br>
-**-Com o projeto aberto vá até a aba Ferramentas -> Geremciador de pacotes nuget -> abra o Console do gerenciador de pacotes -> Rode o comando Update-Database (Padrão: Autenticação com windows Server:LocalHost)**<br>
+**-Com o projeto aberto vá até a aba Ferramentas -> Gerenciador de pacotes nuget -> abra o Console do gerenciador de pacotes -> Rode o comando Update-Database (Padrão: Autenticação com windows Server:LocalHost)**<br>
 **-Depois de rodar o migrations pode executar a aplicação(f5)**<br>
 
 ## 🔨 Funcionalidades do projeto
--``Cadastro de Empresa, Notas Fiscais, Carrinhos:`` Post<br>
+O projeto está organizado em **controllers separados**, cada um responsável por um conjunto de funcionalidades. Todas as operações seguem **CQRS** com **Mediator**.
+
+### Empresa (`CompanyController`)
+- **Cadastro de empresa** (POST)  
+- **Atualização de empresa** (PUT)  
+- **Exclusão de empresa** (DELETE)  
+
+### Notas Fiscais (`InvoiceController`)
+- **Cadastro de notas fiscais** (POST)  
+- **Remoção de notas fiscais** (DELETE)  
+
+### Carrinhos (`CartController`)
+- **Criação de carrinho** (POST)   
+- **Checkout do carrinho** (GET)  
 
 ## 👨🏻‍💻 Abordagens Técnicas
 
@@ -52,12 +65,13 @@ Para garantir a validação eficiente dos dados de entrada, implementei a biblio
 
 - ``.Net 8``
 - ``Enity Framework``
+- ``Migrations``
+- ``DDD``
+- ``Value Objects``
 - ``Clean Architecture``
 - ``Injeção de dependência``
 - ``Inversão de controle``
 - ``Repository Pattern``
 - ``Code-First``
-- ``AutoMapper``
-- ``Migrations``
 - ``FluentValidation``
-
+- ``Pipelines``

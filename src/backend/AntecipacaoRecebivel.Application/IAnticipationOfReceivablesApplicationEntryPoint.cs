@@ -1,0 +1,4 @@
+﻿namespace AnticipationOfReceivables.Application;
+
+public interface IAnticipationOfReceivablesApplicationEntryPoint;
+
